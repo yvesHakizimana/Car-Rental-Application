@@ -10,4 +10,6 @@ public interface AdminService {
     boolean postCar(CarDto carDto) throws IOException;
     List<CarDto> getAllCars();
     CarDto deleteCar(Long id);
+    CarDto getCarById(Long id);
+    boolean updateCar(Long carId, CarDto carDto) throws IOException;
 }
