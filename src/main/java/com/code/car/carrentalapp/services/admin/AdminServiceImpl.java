@@ -4,6 +4,7 @@ import com.code.car.carrentalapp.dto.CarDto;
 import com.code.car.carrentalapp.entity.Car;
 import com.code.car.carrentalapp.repository.CarRepository;
 import com.code.car.carrentalapp.services.images.ImageService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -47,13 +48,48 @@ public class AdminServiceImpl implements AdminService{
 
     @Override
     public CarDto deleteCar(Long id) {
-        Optional<Car> car = carRepository.findById(id);
-        if(car.isEmpty())
-            throw new IllegalArgumentException("The car with the id : " + id + " is not present");
-        else {
-            carRepository.deleteById(id);
-            return car.get().getCarDto();
-        }
-
+        // Check if the car exists in the repository
+        Optional<Car> carOptional = carRepository.findById(id);
+        // If the car does not exist, throw an exception
+        Car car = carOptional.orElseThrow(() -> new EntityNotFoundException("Car with ID " + id + " not found"));
+        // Delete the car from the repository
+        carRepository.delete(car);
+        // Return the DTO of the deleted car
+        return car.getCarDto();
     }
+
+    @Override
+    public CarDto getCarById(Long id) {
+        // Check if the car exists in the repository
+        Optional<Car> carOptional = carRepository.findById(id);
+        // If the car does not exist, throw an exception
+        Car car = carOptional.orElseThrow(() -> new EntityNotFoundException("Car with ID " + id + " not found"));
+
+        // Return the DTO of the deleted car
+        return car.getCarDto();
+    }
+
+    @Override
+    public boolean updateCar(Long carId, CarDto carDto) throws IOException {
+        Optional<Car> optionalCar = carRepository.findById(carId);
+        if(optionalCar.isPresent()){
+            Car existingCar = optionalCar.get();
+            if(carDto.getImagePosted() != null){
+                existingCar.setImagePath(imageService.saveImageToStorage(carDto.getImagePosted()));
+                existingCar.setName(carDto.getName());
+                existingCar.setBrand(carDto.getBrand());
+                existingCar.setColor(carDto.getColor());
+                existingCar.setType(carDto.getType());
+                existingCar.setTransmission(carDto.getTransmission());
+                existingCar.setDescription(carDto.getDescription());
+                existingCar.setPrice(carDto.getPrice());
+                existingCar.setYear(carDto.getYear());
+                carRepository.save(existingCar);
+                return true;
+            }
+
+        }
+        return false;
+    }
+
 }
