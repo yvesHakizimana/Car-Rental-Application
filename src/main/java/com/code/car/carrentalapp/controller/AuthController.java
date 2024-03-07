@@ -23,8 +23,6 @@ public class AuthController {
 
      private final AuthService authService;
 
-
-
      @PostMapping("/signup")
      public ResponseEntity<?> signUpCustomer(@RequestBody SignupRequest userCredentials){
          if(authService.hasCustomerWithEmail(userCredentials.getEmail()))
