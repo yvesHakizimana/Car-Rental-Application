@@ -1,6 +1,7 @@
 package com.code.car.carrentalapp.configuration;
 
 import com.code.car.carrentalapp.utils.JwtUtil;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,41 +27,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
     @Override
-    protected void doFilterInternal(
-            @NonNull  HttpServletRequest request,
-            @NonNull  HttpServletResponse response,
-            @NonNull  FilterChain filterChain) throws ServletException, IOException {
-        // Capture  the authorization header to remove bearer token
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
 
-        if(authHeader == null  || !authHeader.startsWith("Bearer ")){
-            //Continue with the request
+        if(authHeader == null  || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-
-        //Get the bearerToken from the authorization Header
         final String bearerToken = authHeader.substring(7);
 
-        //Extract the username from the authorization header
-        final String userEmail = jwtUtil.getUsername(bearerToken);
+        try {
+            String userEmail = jwtUtil.getUsername(bearerToken);
 
-        if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
-            // Retrieving the user credentials from the database
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
-            if(jwtUtil.isTokenValid(bearerToken, userDetails)){
-                SecurityContext context = SecurityContextHolder.createEmptyContext();
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                context.setAuthentication(authToken);
-                SecurityContextHolder.setContext(context);
+            if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+
+                if(jwtUtil.isTokenValid(bearerToken, userDetails)) {
+                    SecurityContext context = SecurityContextHolder.createEmptyContext();
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    context.setAuthentication(authToken);
+                    SecurityContextHolder.setContext(context);
+                }
             }
+        } catch (ExpiredJwtException ex) {
+            // Handle expired token exception here
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token has expired");
+            return;
         }
+
         filterChain.doFilter(request,response);
     }
 }
