@@ -19,6 +19,13 @@ import java.io.IOException;
 public class AdminController {
 
     private final AdminService adminService;
+
+    @GetMapping("/cars")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    public ResponseEntity<?> getAllCars() {
+        return ResponseEntity.ok(adminService.getAllCars());
+    }
+
     @PostMapping("/car")
     @PreAuthorize("hasAnyAuthority('ADMIN')")
     public ResponseEntity<?> postCar(@ModelAttribute CarDto carDto) throws IOException {
@@ -32,11 +39,6 @@ public class AdminController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     }
 
-    @GetMapping("/cars")
-    @PreAuthorize("hasAnyAuthority('ADMIN')")
-    public ResponseEntity<?> getAllCars() {
-        return ResponseEntity.ok(adminService.getAllCars());
-    }
 
     @GetMapping("/car/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN')")
@@ -53,6 +55,18 @@ public class AdminController {
         }
     }
 
+    @PutMapping("/car/{carId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    public ResponseEntity<?> updateCar(@PathVariable Long carId, @ModelAttribute CarDto carDto) throws IOException{
+        try{
+            boolean isUpdated = adminService.updateCar(carId, carDto);
+            if(isUpdated)
+                return ResponseEntity.ok(carDto);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception ex){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
     @DeleteMapping("/car/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN')")
     public ResponseEntity<?> deleteCar(@PathVariable Long id){
@@ -69,17 +83,4 @@ public class AdminController {
     }
 
 
-    @PutMapping("/car/{carId}")
-    @PreAuthorize("hasAnyAuthority('ADMIN')")
-    public ResponseEntity<?> updateCar(@PathVariable Long carId, @ModelAttribute CarDto carDto) throws IOException{
-        try{
-            boolean isUpdated = adminService.updateCar(carId, carDto);
-            if(isUpdated)
-                return ResponseEntity.status(HttpStatus.OK).build();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        } catch (Exception ex){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-    }
 }
